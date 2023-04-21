@@ -24,6 +24,7 @@
   "dependencies": {
     "@chainsafe/libp2p-noise": "^11.0.2",
     "@chainsafe/libp2p-yamux": "^3.0.7",
+    "@helia/interface": "file:../../ipfs/helia/packages/interface",
     "@helia/ipns": "^1.1.0",
     "@helia/unixfs": "^1.2.1",
     "@libp2p/bootstrap": "^6.0.3",
@@ -35,6 +36,7 @@
     "@libp2p/utils": "^3.0.7",
     "@libp2p/websockets": "^5.0.7",
     "@libp2p/webtransport": "^1.0.11",
+    "@marcopolo_/libp2p-fetch": "^0.0.1",
     "@multiformats/multiaddr": "^12.1.0",
     "abortabort": "^0.0.1",
     "blockstore-core": "^4.1.0",
@@ -42,7 +44,9 @@
     "datastore-level": "^10.1.0",
     "debug": "^4.3.4",
     "file-type": "^16.5.4",
-    "helia": "next",
+    "helia": "file:../../ipfs/helia/packages/helia",
+    "interface-blockstore": "^5.2.0",
+    "ipfs-bitswap": "file:../../ipfs/js-ipfs-bitswap",
     "ipns": "^6.0.0",
     "kubo-rpc-client": "^3.0.1",
     "libp2p": "^0.43.3",
@@ -51,6 +55,7 @@
     "p-try-each": "^1.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "source-map-loader": "^4.0.1",
     "workbox-broadcast-update": "^6.5.4",
     "workbox-expiration": "^6.5.4",
     "workbox-precaching": "^6.5.4",
@@ -85,5 +90,8 @@
     "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^4.13.1",
     "webpack-merge": "^5.8.0"
+  },
+  "overrides": {
+    "ipfs-bitswap": "file:../../ipfs/js-ipfs-bitswap"
   }
 }
