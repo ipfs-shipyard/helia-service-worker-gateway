@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/ipfs-shipyard/service-worker-gateway/compare/v1.0.0...v1.1.0) (2024-03-27)
+
+
+### Features
+
+* http range support ([#122](https://github.com/ipfs-shipyard/service-worker-gateway/issues/122)) ([b064d20](https://github.com/ipfs-shipyard/service-worker-gateway/commit/b064d20b4d9b67ba33690ee115cbf6a2d78d3d1b))
+* quick TTFB & TTI for large content ([#138](https://github.com/ipfs-shipyard/service-worker-gateway/issues/138)) ([b3c08d1](https://github.com/ipfs-shipyard/service-worker-gateway/commit/b3c08d1df385fb7a27d6420c7d93ba20c598b84f))
+
+
+### Bug Fixes
+
+* **ci:** attach car to published release ([41d2cff](https://github.com/ipfs-shipyard/service-worker-gateway/commit/41d2cffcff5bc3061212fe13aadb5df9c1a3f64c))
+* fix unixfs directory redirects ([#156](https://github.com/ipfs-shipyard/service-worker-gateway/issues/156)) ([4304333](https://github.com/ipfs-shipyard/service-worker-gateway/commit/4304333846c1af45fb7375adcc14768b439eb473))
+
 ## 1.0.0 (2024-03-15)
 
 
