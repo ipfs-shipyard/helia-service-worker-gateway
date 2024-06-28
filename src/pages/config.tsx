@@ -8,6 +8,7 @@ import { RouteContext } from '../context/router-context.jsx'
 import { ServiceWorkerProvider } from '../context/service-worker-context.jsx'
 import { HeliaServiceWorkerCommsChannel } from '../lib/channel.js'
 import { defaultDnsJsonResolvers, defaultGateways, defaultRouters, getConfig, loadConfigFromLocalStorage, resetConfig } from '../lib/config-db.js'
+import { hasLocalGateway, localGwUrl } from '../lib/local-gateway.js'
 import { LOCAL_STORAGE_KEYS } from '../lib/local-storage.js'
 import { getUiComponentLogger, uiLogger } from '../lib/logger.js'
 import './default-page-styles.css'
@@ -16,13 +17,31 @@ const uiComponentLogger = getUiComponentLogger('config-page')
 const log = uiLogger.forComponent('config-page')
 const channel = new HeliaServiceWorkerCommsChannel('WINDOW', uiComponentLogger)
 
-const urlValidationFn = (value: string): Error | null => {
+const gatewayArrayValidationFn = (value: string): Error | null => {
   try {
     const urls = JSON.parse(value) satisfies string[]
     let i = 0
     if (urls.length === 0) {
       throw new Error('At least one URL is required. Reset the config to use defaults.')
     }
+    try {
+      urls.map((url, index) => {
+        i = index
+        return new URL(url)
+      })
+    } catch (e) {
+      throw new Error(`URL "${urls[i]}" at index ${i} is not valid`)
+    }
+    return null
+  } catch (err) {
+    return err as Error
+  }
+}
+
+const routersArrayValidationFn = (value: string): Error | null => {
+  try {
+    const urls = JSON.parse(value) satisfies string[]
+    let i = 0
     try {
       urls.map((url, index) => {
         i = index
@@ -84,10 +103,41 @@ function ConfigPage (): React.JSX.Element | null {
     window.parent?.postMessage({ source: 'helia-sw-config-iframe', target: 'PARENT', action: 'RELOAD_CONFIG', config }, {
       targetOrigin
     })
-    log.trace('config-page: RELOAD_CONFIG sent to parent window')
+    log.trace('RELOAD_CONFIG sent to parent window')
   }, [])
 
+  // Effect to add or remove the local gateway
   useEffect(() => {
+    hasLocalGateway()
+      .then(async hasLocalGw => {
+        // check if local storage has it.
+        const unparsedGwConf = localStorage.getItem(LOCAL_STORAGE_KEYS.config.gateways)
+        let gwConf = unparsedGwConf != null ? JSON.parse(unparsedGwConf) as string[] : defaultGateways
+
+        if (hasLocalGw) {
+          // Add the local gateway to config if not there already
+          if (!gwConf.includes(localGwUrl)) {
+            log(`Adding ${localGwUrl} to gateway list`)
+            gwConf.unshift(localGwUrl)
+          }
+        } else if (gwConf.includes(localGwUrl)) {
+          // remove local gateway from the configuration if the gateway is not available
+          gwConf = gwConf.filter(gw => gw !== localGwUrl)
+          if (gwConf.length === 0) {
+            // if there are no gateways following the removal reset to the default gateways
+            gwConf = defaultGateways
+          }
+        }
+
+        // persist to localstorage, idb and 🙃
+        localStorage.setItem(LOCAL_STORAGE_KEYS.config.gateways, JSON.stringify(gwConf))
+        await loadConfigFromLocalStorage()
+        await channel.messageAndWaitForResponse('SW', { target: 'SW', action: 'RELOAD_CONFIG' })
+        await postFromIframeToParentSw()
+        setResetKey((prev) => prev + 1) // needed to ensure the config is re-rendered
+      }).catch(err => {
+        log.error('failed to probe for local gateway', err)
+      })
     /**
      * On initial load, we want to send the config to the parent window, so that the reload page can auto-reload if enabled, and the subdomain registered service worker gets the latest config without user interaction.
      */
@@ -122,8 +172,9 @@ function ConfigPage (): React.JSX.Element | null {
   return (
     <main className='e2e-config-page pa4-l bg-snow mw7 center pa4'>
       <Collapsible collapsedLabel="View config" expandedLabel='Hide config' collapsed={isLoadedInIframe}>
-        <LocalStorageInput className="e2e-config-page-input e2e-config-page-input-gateways" localStorageKey={LOCAL_STORAGE_KEYS.config.gateways} label='Gateways' validationFn={urlValidationFn} defaultValue={JSON.stringify(defaultGateways)} resetKey={resetKey} />
-        <LocalStorageInput className="e2e-config-page-input e2e-config-page-input-routers" localStorageKey={LOCAL_STORAGE_KEYS.config.routers} label='Routers' validationFn={urlValidationFn} defaultValue={JSON.stringify(defaultRouters)} resetKey={resetKey} />
+        <LocalStorageInput className="e2e-config-page-input e2e-config-page-input-gateways" localStorageKey={LOCAL_STORAGE_KEYS.config.gateways} label='Gateways' validationFn={gatewayArrayValidationFn} defaultValue={JSON.stringify(defaultGateways)} resetKey={resetKey} />
+        <LocalStorageInput className="e2e-config-page-input e2e-config-page-input-routers" localStorageKey={LOCAL_STORAGE_KEYS.config.routers} label='Routers' validationFn={routersArrayValidationFn} defaultValue={JSON.stringify(defaultRouters)} resetKey={resetKey} />
+        <LocalStorageToggle className="e2e-config-page-input e2e-config-page-input" localStorageKey={LOCAL_STORAGE_KEYS.config.delegatedRouting} onLabel='Use Delegated Routing' offLabel='Disabled' resetKey={resetKey} />
         <LocalStorageInput className="e2e-config-page-input e2e-config-page-input-dnsJsonResolvers" localStorageKey={LOCAL_STORAGE_KEYS.config.dnsJsonResolvers} label='DNS (application/dns-json) resolvers' validationFn={dnsJsonValidationFn} defaultValue={JSON.stringify(defaultDnsJsonResolvers)} resetKey={resetKey} />
         <LocalStorageToggle className="e2e-config-page-input e2e-config-page-input-autoreload" localStorageKey={LOCAL_STORAGE_KEYS.config.autoReload} onLabel='Auto Reload' offLabel='Show Config' resetKey={resetKey} />
         <LocalStorageInput className="e2e-config-page-input" localStorageKey={LOCAL_STORAGE_KEYS.config.debug} label='Debug logging' validationFn={stringValidationFn} defaultValue='' resetKey={resetKey} />
