@@ -563,24 +563,32 @@ async function errorPageResponse (fetchResponse: Response): Promise<Response> {
   /**
    * TODO: output configuration
    */
-  return new Response(`
-      <h1>Oops! Something went wrong inside of Service Worker IPFS Gateway.</h1>
-      <p><button onclick="window.location.reload(true);">Click here to retry</button></p>
-      <p>
-        <h2>Error details:</h2>
-        <p><b>Message: </b>${json.error.message}</p>
-        <b>Stacktrace: </b><pre>${json.error.stack}</pre>
-      </p>
-      <p>
-        <h2>Response details:</h2>
-        <h3>${responseDetails.status} ${responseDetails.statusText}</h3>
-        <pre>${JSON.stringify(responseDetails, null, 2)}</pre>
-      </p>
-      <p>
-        <h2>Service worker details:</h2>
-        <pre>${JSON.stringify(await getServiceWorkerDetails(), null, 2)}</pre>
-      </p>
-    `, {
+  return new Response(`<!DOCTYPE html>
+    <html>
+      <body>
+        <div id="root" class="sans-serif f5">
+          <h1>Oops! Something went wrong inside of Service Worker IPFS Gateway.</h1>
+          <p>
+            <button onclick="window.history.back();">Go back</button>
+            <button onclick="window.location.reload(true);">Click here to retry</button>
+          </p>
+          <p>
+            <h2>Error details:</h2>
+            <p><b>Message: </b>${json.error.message}</p>
+            <b>Stacktrace: </b><pre>${json.error.stack}</pre>
+          </p>
+          <p>
+            <h2>Response details:</h2>
+            <h3>${responseDetails.status} ${responseDetails.statusText}</h3>
+            <pre>${JSON.stringify(responseDetails, null, 2)}</pre>
+          </p>
+          <p>
+            <h2>Service worker details:</h2>
+            <pre>${JSON.stringify(await getServiceWorkerDetails(), null, 2)}</pre>
+          </p>
+        </div>
+      </body>
+    </html>`, {
     status: fetchResponse.status,
     statusText: fetchResponse.statusText,
     headers: new Headers({
